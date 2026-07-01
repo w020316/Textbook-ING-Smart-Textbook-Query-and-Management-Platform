@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * {
+    @apply border-slate-200;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-2.5 bg-primary-500 text-white font-medium rounded-lg transition-all hover:bg-primary-600 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-2.5 bg-white text-primary-600 font-medium rounded-lg border border-primary-200 transition-all hover:bg-primary-50 active:scale-95;
+  }
+
+  .btn-gradient {
+    @apply inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-medium rounded-lg transition-all hover:shadow-lg hover:shadow-primary-500/30 active:scale-95;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-slate-200 transition-all hover:shadow-md;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none;
+  }
+
+  .tag {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .tag-primary {
+    @apply tag bg-primary-50 text-primary-700;
+  }
+
+  .tag-success {
+    @apply tag bg-emerald-50 text-emerald-700;
+  }
+
+  .tag-warning {
+    @apply tag bg-amber-50 text-amber-700;
+  }
+
+  .tag-error {
+    @apply tag bg-red-50 text-red-700;
+  }
+
+  .container-page {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

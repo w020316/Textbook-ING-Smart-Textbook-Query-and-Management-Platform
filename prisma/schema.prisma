@@ -1,0 +1,263 @@
+// 教材ING 数据库 Schema
+// 数据库: Neon PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==================== 枚举 ====================
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum EventType {
+  NORMAL
+  START
+  EXAM
+  HOLIDAY
+}
+
+enum TokenType {
+  REGISTER
+  RESET
+}
+
+// ==================== 用户系统 ====================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  role          Role     @default(STUDENT)
+  avatar        String?
+  points        Int      @default(0)
+  emailVerified DateTime?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  comments    Comment[]
+  pointRecords PointRecord[]
+  messages    Message[]
+  news        News[]
+
+  @@map("users")
+}
+
+model VerifyToken {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  type      TokenType
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email, type])
+  @@map("verify_tokens")
+}
+
+// ==================== 学院/专业/班级 ====================
+
+model College {
+  id    String  @id @default(cuid())
+  name  String
+  code  String  @unique
+  sort  Int     @default(0)
+  majors Major[]
+
+  @@map("colleges")
+}
+
+model Major {
+  id        String  @id @default(cuid())
+  name      String
+  code      String  @unique
+  collegeId String  @map("college_id")
+  sort      Int     @default(0)
+
+  college College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  classes Class[]
+
+  @@map("majors")
+}
+
+model Class {
+  id       String @id @default(cuid())
+  name     String
+  grade    Int
+  majorId  String @map("major_id")
+
+  major     Major      @relation(fields: [majorId], references: [id], onDelete: Cascade)
+  textbooks Textbook[]
+
+  @@map("classes")
+}
+
+// ==================== 学期/课程/教材 ====================
+
+model Semester {
+  id         String   @id @default(cuid())
+  name       String
+  startDate  DateTime @map("start_date")
+  endDate    DateTime @map("end_date")
+  totalWeeks Int      @map("total_weeks")
+  isActive   Boolean  @default(false) @map("is_active")
+
+  courses      Course[]
+  calendarWeeks CalendarWeek[]
+
+  @@map("semesters")
+}
+
+model Course {
+  id         String  @id @default(cuid())
+  name       String
+  code       String
+  credits    Float   @default(0)
+  semesterId String  @map("semester_id")
+
+  semester  Semester   @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  textbooks Textbook[]
+
+  @@map("courses")
+}
+
+model Textbook {
+  id         String  @id @default(cuid())
+  title      String
+  author     String
+  publisher  String
+  isbn       String
+  price      Float   @default(0)
+  coverImage String? @map("cover_image")
+  courseId    String  @map("course_id")
+  classId    String? @map("class_id")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  class  Class?  @relation(fields: [classId], references: [id], onDelete: SetNull)
+
+  @@index([title])
+  @@index([author])
+  @@index([publisher])
+  @@map("textbooks")
+}
+
+// ==================== 校历 ====================
+
+model CalendarWeek {
+  id         String   @id @default(cuid())
+  semesterId String   @map("semester_id")
+  weekNumber Int      @map("week_number")
+  startDate  DateTime @map("start_date")
+  endDate    DateTime @map("end_date")
+  event      String?
+  eventType  EventType @default(NORMAL) @map("event_type")
+
+  semester Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_weeks")
+}
+
+// ==================== 新闻系统 ====================
+
+model NewsCategory {
+  id    String @id @default(cuid())
+  name  String
+  slug  String @unique
+  sort  Int    @default(0)
+
+  news News[]
+
+  @@map("news_categories")
+}
+
+model News {
+  id         String   @id @default(cuid())
+  title      String
+  content    String
+  summary    String
+  coverImage String?  @map("cover_image")
+  categoryId String   @map("category_id")
+  authorId   String   @map("author_id")
+  isPinned   Boolean  @default(false) @map("is_pinned")
+  viewCount  Int      @default(0) @map("view_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  category NewsCategory @relation(fields: [categoryId], references: [id])
+  author   User         @relation(fields: [authorId], references: [id])
+  comments Comment[]
+
+  @@index([categoryId])
+  @@index([createdAt])
+  @@map("news")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String   @map("user_id")
+  newsId    String   @map("news_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  news News @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  @@index([newsId])
+  @@map("comments")
+}
+
+// ==================== 积分系统 ====================
+
+model PointRecord {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  amount    Int
+  reason    String
+  balance   Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("point_records")
+}
+
+// ==================== 消息系统 ====================
+
+model Message {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  title     String
+  content   String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("messages")
+}
+
+// ==================== 热门搜索 ====================
+
+model HotSearch {
+  id        String   @id @default(cuid())
+  keyword   String
+  count     Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([count])
+  @@map("hot_searches")
+}
