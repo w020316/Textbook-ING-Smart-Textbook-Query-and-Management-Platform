@@ -1,5 +1,5 @@
 // 教材ING API 主路由 - Catch-all Handler
-import { prisma, hashPassword, comparePassword, signToken, getUserFromRequest, requireAuth, sendSuccess, sendError, generateCode, getRequestBody } from './_lib'
+import { prisma, hashPassword, comparePassword, signToken, getUserFromRequest, requireAuth, sendSuccess, sendError, generateCode, getRequestBody } from './_lib.js'
 
 // ==================== 路由匹配 ====================
 type Handler = (req: any, res: any, params: Record<string, string>, query: URLSearchParams) => Promise<void>
