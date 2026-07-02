@@ -105,9 +105,11 @@ export interface Textbook {
   isbn: string
   price: number
   coverImage?: string | null
+  description?: string | null
   courseId: string
   classId?: string | null
   course?: Course
+  class?: Class
 }
 
 // ==================== 校历 ====================

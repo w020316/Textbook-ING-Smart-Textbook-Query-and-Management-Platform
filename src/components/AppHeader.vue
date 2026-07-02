@@ -55,6 +55,13 @@
                   {{ auth.user?.name }}
                 </span>
               </RouterLink>
+              <RouterLink
+                v-if="auth.userRole === 'ADMIN'"
+                to="/admin"
+                class="text-sm text-slate-500 hover:text-primary-600 transition-colors"
+              >
+                管理后台
+              </RouterLink>
               <button
                 type="button"
                 class="text-sm text-slate-500 hover:text-red-500 transition-colors"
@@ -111,6 +118,21 @@
               <div class="px-4 py-2 text-sm text-slate-500">
                 {{ auth.user?.name }} · {{ auth.userPoints }} 积分
               </div>
+              <RouterLink
+                to="/profile"
+                class="block px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-primary-50"
+                @click="mobileMenuOpen = false"
+              >
+                个人中心
+              </RouterLink>
+              <RouterLink
+                v-if="auth.userRole === 'ADMIN'"
+                to="/admin"
+                class="block px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-primary-50"
+                @click="mobileMenuOpen = false"
+              >
+                管理后台
+              </RouterLink>
               <button
                 type="button"
                 class="block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50"

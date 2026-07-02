@@ -1,5 +1,5 @@
-// Vue Router 路由配置（hash 模式）
-import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
+// Vue Router 路由配置（history 模式）
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 
@@ -19,6 +19,12 @@ const routes: RouteRecordRaw[] = [
         name: 'search',
         component: () => import('@/views/SearchView.vue'),
         meta: { title: '教材查询', requiresAuth: true },
+      },
+      {
+        path: 'search/:id',
+        name: 'textbook-detail',
+        component: () => import('@/views/TextbookDetailView.vue'),
+        meta: { title: '教材详情', requiresAuth: true },
       },
       {
         path: 'calendar',
@@ -43,6 +49,61 @@ const routes: RouteRecordRaw[] = [
         name: 'about',
         component: () => import('@/views/AboutView.vue'),
         meta: { title: '关于我们' },
+      },
+      {
+        path: 'profile',
+        name: 'profile',
+        component: () => import('@/views/ProfileView.vue'),
+        meta: { title: '个人中心', requiresAuth: true },
+      },
+      {
+        path: 'verify-email',
+        name: 'verify-email',
+        component: () => import('@/views/VerifyEmailView.vue'),
+        meta: { title: '邮箱验证' },
+      },
+      {
+        path: 'admin',
+        component: () => import('@/admin/layouts/AdminLayout.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true },
+        children: [
+          {
+            path: '',
+            name: 'admin-dashboard',
+            component: () => import('@/admin/views/DashboardView.vue'),
+            meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true },
+          },
+          {
+            path: 'textbooks',
+            name: 'admin-textbooks',
+            component: () => import('@/admin/views/TextbookManageView.vue'),
+            meta: { title: '教材管理', requiresAuth: true, requiresAdmin: true },
+          },
+          {
+            path: 'news',
+            name: 'admin-news',
+            component: () => import('@/admin/views/NewsManageView.vue'),
+            meta: { title: '新闻管理', requiresAuth: true, requiresAdmin: true },
+          },
+          {
+            path: 'users',
+            name: 'admin-users',
+            component: () => import('@/admin/views/UserManageView.vue'),
+            meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true },
+          },
+          {
+            path: 'calendar',
+            name: 'admin-calendar',
+            component: () => import('@/admin/views/CalendarManageView.vue'),
+            meta: { title: '校历管理', requiresAuth: true, requiresAdmin: true },
+          },
+          {
+            path: 'colleges',
+            name: 'admin-colleges',
+            component: () => import('@/admin/views/CollegeManageView.vue'),
+            meta: { title: '学院管理', requiresAuth: true, requiresAdmin: true },
+          },
+        ],
       },
       {
         path: ':pathMatch(.*)*',
@@ -91,7 +152,7 @@ const routes: RouteRecordRaw[] = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes,
   scrollBehavior(_to, _from, savedPosition) {
     if (savedPosition) {
@@ -111,10 +172,20 @@ router.beforeEach((to, _from, next) => {
 
   const token = localStorage.getItem('token')
   const isAuthed = !!token
+  // 从 localStorage 读取用户角色（登录时已存储）
+  const userStr = localStorage.getItem('user')
+  const user = userStr ? JSON.parse(userStr) : null
+  const isAdmin = user?.role === 'ADMIN'
 
   // 需要登录但未登录 → 跳转登录页并记录重定向地址
   if (to.meta.requiresAuth && !isAuthed) {
     next({ path: '/login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  // 需要管理员权限但非管理员 → 跳转 403
+  if (to.meta.requiresAdmin && !isAdmin) {
+    next({ name: 'not-found' })
     return
   }
 

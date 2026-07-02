@@ -30,12 +30,24 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * 同步 user 到 localStorage（供路由守卫读取角色）
+   */
+  function persistUser() {
+    if (user.value) {
+      localStorage.setItem('user', JSON.stringify(user.value))
+    } else {
+      localStorage.removeItem('user')
+    }
+  }
+
+  /**
    * 清除 token 与用户信息
    */
   function clearAuth() {
     token.value = null
     user.value = null
     removeToken()
+    localStorage.removeItem('user')
   }
 
   /**
@@ -45,6 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
     const data = await post<LoginResult>('/auth/login', { email, password } satisfies LoginForm)
     setAuthToken(data.token)
     user.value = data.user
+    persistUser()
     return data
   }
 
@@ -55,6 +68,7 @@ export const useAuthStore = defineStore('auth', () => {
     const data = await post<LoginResult>('/auth/register', form)
     setAuthToken(data.token)
     user.value = data.user
+    persistUser()
     return data
   }
 
@@ -78,6 +92,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return null
     const data = await get<User>('/auth/me')
     user.value = data
+    persistUser()
     return data
   }
 
