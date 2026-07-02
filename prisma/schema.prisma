@@ -51,6 +51,8 @@ model User {
   messages    Message[]
   news        News[]
 
+  @@index([createdAt])
+  @@index([role])
   @@map("users")
 }
 
@@ -89,6 +91,7 @@ model Major {
   college College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
   classes Class[]
 
+  @@index([collegeId])
   @@map("majors")
 }
 
@@ -101,6 +104,7 @@ model Class {
   major     Major      @relation(fields: [majorId], references: [id], onDelete: Cascade)
   textbooks Textbook[]
 
+  @@index([majorId])
   @@map("classes")
 }
 
@@ -130,6 +134,7 @@ model Course {
   semester  Semester   @relation(fields: [semesterId], references: [id], onDelete: Cascade)
   textbooks Textbook[]
 
+  @@index([semesterId])
   @@map("courses")
 }
 
@@ -150,6 +155,8 @@ model Textbook {
   @@index([title])
   @@index([author])
   @@index([publisher])
+  @@index([courseId])
+  @@index([classId])
   @@map("textbooks")
 }
 
@@ -166,6 +173,7 @@ model CalendarWeek {
 
   semester Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
 
+  @@index([semesterId])
   @@map("calendar_weeks")
 }
 
@@ -200,7 +208,9 @@ model News {
   comments Comment[]
 
   @@index([categoryId])
+  @@index([authorId])
   @@index([createdAt])
+  @@index([isPinned])
   @@map("news")
 }
 
@@ -215,6 +225,7 @@ model Comment {
   news News @relation(fields: [newsId], references: [id], onDelete: Cascade)
 
   @@index([newsId])
+  @@index([userId])
   @@map("comments")
 }
 

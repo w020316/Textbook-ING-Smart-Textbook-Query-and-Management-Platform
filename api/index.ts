@@ -1,7 +1,8 @@
 // 教材ING API 主路由 - Catch-all Handler
-// 职责：路由匹配 + 认证守卫 + 限流 + 分发到各模块
+// 职责：路由匹配 + 认证守卫 + 限流 + 缓存 + 分发到各模块
 import { getUserFromRequest, sendError } from './_lib.js'
 import { rateLimit } from './_rateLimit.js'
+import { getCache, setCache, invalidateCache } from './_cache.js'
 
 // 认证模块
 import { handleSendCode, handleRegister, handleLogin, handleLogout, handleForgotPassword, handleResetPassword, handleMe } from './auth.js'
@@ -34,6 +35,8 @@ interface Route {
   auth?: boolean
   // 限流配置：每分钟最大请求数
   rateLimit?: number
+  // 缓存配置：有效期（秒），仅对 GET 公开接口生效
+  cache?: number
 }
 
 function matchRoute(pattern: string, path: string): Record<string, string> | null {
@@ -73,18 +76,18 @@ const routes: Route[] = [
   { method: 'GET', pattern: '/api/majors/:id/classes', handler: handleClasses, auth: true },
 
   // --- 校历 ---
-  { method: 'GET', pattern: '/api/semesters', handler: handleSemesters },
-  { method: 'GET', pattern: '/api/calendar', handler: handleCalendar },
+  { method: 'GET', pattern: '/api/semesters', handler: handleSemesters, cache: 300 },
+  { method: 'GET', pattern: '/api/calendar', handler: handleCalendar, cache: 300 },
 
   // --- 新闻 ---
-  { method: 'GET', pattern: '/api/news/categories', handler: handleNewsCategories },
-  { method: 'GET', pattern: '/api/news', handler: handleNewsList },
+  { method: 'GET', pattern: '/api/news/categories', handler: handleNewsCategories, cache: 600 },
+  { method: 'GET', pattern: '/api/news', handler: handleNewsList, cache: 30 },
   { method: 'GET', pattern: '/api/news/:id', handler: handleNewsDetail },
   { method: 'GET', pattern: '/api/news/:id/comments', handler: handleNewsComments },
   { method: 'POST', pattern: '/api/news/:id/comments', handler: handleAddComment, auth: true, rateLimit: 10 },
 
   // --- 统计 ---
-  { method: 'GET', pattern: '/api/stats', handler: handleStats },
+  { method: 'GET', pattern: '/api/stats', handler: handleStats, cache: 60 },
 
   // --- 积分 ---
   { method: 'GET', pattern: '/api/points/balance', handler: handlePointsBalance, auth: true },
@@ -177,7 +180,31 @@ export default async function handler(req: any, res: any) {
           if (!user) return sendError(res, '未认证，请先登录', 2, 401)
           ;(req as any)._user = user
         }
+
+        // 缓存检查（仅 GET 公开接口）
+        if (route.cache && method === 'GET') {
+          const cacheKey = `get:${path}:${query.toString()}`
+          const cached = getCache<any>(cacheKey)
+          if (cached) {
+            return res.status(200).json(cached)
+          }
+          // 包装 res.json 以捕获响应数据
+          const originalJson = res.json.bind(res)
+          res.json = (body: any) => {
+            // 仅缓存成功响应（code === 0）
+            if (body?.code === 0) {
+              setCache(cacheKey, body, route.cache)
+            }
+            return originalJson(body)
+          }
+        }
+
         await route.handler(req, res, params, query)
+
+        // 管理后台写操作后清除公开接口缓存（避免脏数据）
+        if (method !== 'GET' && path.startsWith('/api/admin/')) {
+          invalidateCache('get:')
+        }
         return
       } catch (err: any) {
         console.error(`[API Error] ${method} ${path}:`, err)
