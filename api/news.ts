@@ -34,32 +34,37 @@ export async function handleNewsCategories(req: any, res: any) {
 
 // 新闻列表
 export async function handleNewsList(req: any, res: any, params: any, query: URLSearchParams) {
-  const page = parseInt(query.get('page') || '1')
-  const pageSize = parseInt(query.get('pageSize') || '10')
+  const page = Math.max(1, parseInt(query.get('page') || '1'))
+  const pageSize = Math.min(50, Math.max(1, parseInt(query.get('pageSize') || '10')))
   const categoryId = query.get('categoryId') || ''
 
   const where: any = {}
   if (categoryId) where.categoryId = categoryId
 
-  const [total, pinned, list] = await Promise.all([
-    prisma.news.count({ where }),
-    prisma.news.findMany({ where: { ...where, isPinned: true }, include: { category: true }, orderBy: { createdAt: 'desc' } }),
-    prisma.news.findMany({
-      where: { ...where, isPinned: false },
-      include: { category: true },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      orderBy: { createdAt: 'desc' },
-    }),
-  ])
+  // 串行查询，避免 Serverless 环境中并行查询导致连接池耗尽
+  const total = await prisma.news.count({ where })
+  const pinned = await prisma.news.findMany({
+    where: { ...where, isPinned: true },
+    include: { category: true },
+    orderBy: { createdAt: 'desc' },
+  })
+  const list = await prisma.news.findMany({
+    where: { ...where, isPinned: false },
+    include: { category: true },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+    orderBy: { createdAt: 'desc' },
+  })
+
+  const effectiveTotal = Math.max(0, total - pinned.length)
 
   return sendSuccess(res, {
     pinned,
     list,
-    total: total - pinned.length,
+    total: effectiveTotal,
     page,
     pageSize,
-    totalPages: Math.ceil((total - pinned.length) / pageSize),
+    totalPages: Math.ceil(effectiveTotal / pageSize),
   })
 }
 

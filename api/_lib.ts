@@ -4,13 +4,15 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
 // ==================== Prisma Client ====================
+// 在 Serverless 环境中复用全局 Prisma 实例，避免每次调用创建新连接
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient()
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({
+  log: process.env.NODE_ENV === 'production' ? ['error'] : ['query', 'error', 'warn'],
+})
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
-}
+// 生产环境也缓存到 global，避免 Serverless 函数重复创建连接
+globalForPrisma.prisma = prisma
 
 // ==================== Auth ====================
 const JWT_SECRET = process.env.JWT_SECRET || 'textbook-ing-dev-secret-2026'
