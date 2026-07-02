@@ -44,3 +44,4 @@ pnpm-debug.log*
 # 部署凭据（包含敏感信息，禁止提交）
 .deploy-creds.json
 .deploy-creds.*.json
+scripts/.vercel-token
