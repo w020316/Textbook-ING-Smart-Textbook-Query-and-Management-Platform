@@ -21,10 +21,10 @@
         </nav>
 
         <!-- 右侧操作区 -->
-        <div class="flex items-center gap-3">
-          <!-- 未登录：显示登录按钮 -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- 未登录：显示登录按钮（所有屏幕尺寸可见） -->
           <template v-if="!auth.isAuthenticated">
-            <RouterLink to="/login" class="btn-primary !px-5 !py-2 text-sm hidden sm:inline-flex">
+            <RouterLink to="/login" class="btn-primary !px-4 sm:!px-5 !py-2 text-sm">
               登录
             </RouterLink>
           </template>

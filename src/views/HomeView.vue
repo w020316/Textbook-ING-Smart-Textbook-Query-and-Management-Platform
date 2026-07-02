@@ -190,12 +190,21 @@
       <div class="container-page py-16 md:py-20 text-center">
         <h2 class="text-3xl md:text-4xl font-bold mb-3">开始使用</h2>
         <p class="text-white/90 text-lg mb-8">立即查询您需要的教材信息</p>
-        <button
-          class="inline-flex items-center justify-center px-8 py-3.5 bg-white text-primary-600 font-medium rounded-lg transition-all hover:bg-primary-50 active:scale-95 text-base shadow-lg shadow-black/10"
-          @click="router.push('/search')"
-        >
-          立即查询
-        </button>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <button
+            class="inline-flex items-center justify-center px-8 py-3.5 bg-white text-primary-600 font-medium rounded-lg transition-all hover:bg-primary-50 active:scale-95 text-base shadow-lg shadow-black/10"
+            @click="router.push('/search')"
+          >
+            立即查询
+          </button>
+          <button
+            v-if="!auth.isAuthenticated"
+            class="inline-flex items-center justify-center px-8 py-3.5 bg-white/15 backdrop-blur text-white font-medium rounded-lg transition-all hover:bg-white/25 active:scale-95 text-base border border-white/30"
+            @click="router.push('/login')"
+          >
+            登录账号
+          </button>
+        </div>
         <div class="mt-10 flex flex-col sm:flex-row gap-4 sm:gap-8 justify-center text-sm text-white/85">
           <span class="inline-flex items-center justify-center gap-2">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -216,6 +225,18 @@
             QQ交流群：123456789
           </span>
         </div>
+        <!-- 管理后台入口 -->
+        <div class="mt-8 pt-8 border-t border-white/20 text-center">
+          <RouterLink
+            to="/admin/login"
+            class="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            管理员入口
+          </RouterLink>
+        </div>
       </div>
     </section>
   </div>
@@ -226,11 +247,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { get } from '@/utils/request'
 import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
 import NewsCard from '@/components/NewsCard.vue'
 import type { News } from '@/types'
 
 const router = useRouter()
 const appStore = useAppStore()
+const auth = useAuthStore()
 
 const newsList = ref<News[]>([])
 
