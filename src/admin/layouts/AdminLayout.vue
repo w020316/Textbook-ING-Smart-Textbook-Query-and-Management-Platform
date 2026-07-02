@@ -152,9 +152,9 @@ function isActive(path: string): boolean {
   return route.path.startsWith(path)
 }
 
-// 退出登录
+// 退出登录（跳转回管理后台登录页）
 async function handleLogout() {
   await authStore.logout()
-  router.push('/login')
+  router.push('/admin/login')
 }
 </script>

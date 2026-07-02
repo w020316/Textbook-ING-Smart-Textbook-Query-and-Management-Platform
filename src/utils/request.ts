@@ -59,19 +59,23 @@ service.interceptors.response.use(
       return res.data
     }
 
-    // code: 2=未认证，清理 token 并跳转登录页
+    // code: 2=未认证，清理 token 并跳转对应登录页
     if (res.code === 2) {
       removeToken()
       // 动态导入 router 避免循环依赖；兜底使用 location
       import('@/router')
         .then(({ default: router }) => {
           const current = router.currentRoute.value.fullPath
-          if (!current.startsWith('/login')) {
+          // 管理后台路由失效 → 跳转管理后台登录页
+          if (current.startsWith('/admin') && !current.startsWith('/admin/login')) {
+            router.replace({ path: '/admin/login', query: { redirect: current } })
+          } else if (!current.startsWith('/login') && !current.startsWith('/admin/login')) {
+            // 前台路由失效 → 跳转前台登录页
             router.replace({ path: '/login', query: { redirect: current } })
           }
         })
         .catch(() => {
-          window.location.href = '/#/login'
+          window.location.href = '/login'
         })
       return Promise.reject(new Error(res.message || '登录已失效，请重新登录'))
     }

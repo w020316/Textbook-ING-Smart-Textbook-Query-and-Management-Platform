@@ -63,49 +63,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '邮箱验证' },
       },
       {
-        path: 'admin',
-        component: () => import('@/admin/layouts/AdminLayout.vue'),
-        meta: { requiresAuth: true, requiresAdmin: true },
-        children: [
-          {
-            path: '',
-            name: 'admin-dashboard',
-            component: () => import('@/admin/views/DashboardView.vue'),
-            meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true },
-          },
-          {
-            path: 'textbooks',
-            name: 'admin-textbooks',
-            component: () => import('@/admin/views/TextbookManageView.vue'),
-            meta: { title: '教材管理', requiresAuth: true, requiresAdmin: true },
-          },
-          {
-            path: 'news',
-            name: 'admin-news',
-            component: () => import('@/admin/views/NewsManageView.vue'),
-            meta: { title: '新闻管理', requiresAuth: true, requiresAdmin: true },
-          },
-          {
-            path: 'users',
-            name: 'admin-users',
-            component: () => import('@/admin/views/UserManageView.vue'),
-            meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true },
-          },
-          {
-            path: 'calendar',
-            name: 'admin-calendar',
-            component: () => import('@/admin/views/CalendarManageView.vue'),
-            meta: { title: '校历管理', requiresAuth: true, requiresAdmin: true },
-          },
-          {
-            path: 'colleges',
-            name: 'admin-colleges',
-            component: () => import('@/admin/views/CollegeManageView.vue'),
-            meta: { title: '学院管理', requiresAuth: true, requiresAdmin: true },
-          },
-        ],
-      },
-      {
         path: ':pathMatch(.*)*',
         name: 'not-found',
         component: () => import('@/views/NotFoundView.vue'),
@@ -113,6 +70,7 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  // 前台用户登录（独立于管理后台）
   {
     path: '/login',
     component: AuthLayout,
@@ -122,6 +80,57 @@ const routes: RouteRecordRaw[] = [
         name: 'login',
         component: () => import('@/views/LoginView.vue'),
         meta: { title: '登录' },
+      },
+    ],
+  },
+  // 管理后台登录页（独立页面，不使用 AdminLayout）
+  {
+    path: '/admin/login',
+    name: 'admin-login',
+    component: () => import('@/admin/views/AdminLoginView.vue'),
+    meta: { title: '管理员登录' },
+  },
+  // 管理后台（需管理员权限）
+  {
+    path: '/admin',
+    component: () => import('@/admin/layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'admin-dashboard',
+        component: () => import('@/admin/views/DashboardView.vue'),
+        meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true },
+      },
+      {
+        path: 'textbooks',
+        name: 'admin-textbooks',
+        component: () => import('@/admin/views/TextbookManageView.vue'),
+        meta: { title: '教材管理', requiresAuth: true, requiresAdmin: true },
+      },
+      {
+        path: 'news',
+        name: 'admin-news',
+        component: () => import('@/admin/views/NewsManageView.vue'),
+        meta: { title: '新闻管理', requiresAuth: true, requiresAdmin: true },
+      },
+      {
+        path: 'users',
+        name: 'admin-users',
+        component: () => import('@/admin/views/UserManageView.vue'),
+        meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true },
+      },
+      {
+        path: 'calendar',
+        name: 'admin-calendar',
+        component: () => import('@/admin/views/CalendarManageView.vue'),
+        meta: { title: '校历管理', requiresAuth: true, requiresAdmin: true },
+      },
+      {
+        path: 'colleges',
+        name: 'admin-colleges',
+        component: () => import('@/admin/views/CollegeManageView.vue'),
+        meta: { title: '学院管理', requiresAuth: true, requiresAdmin: true },
       },
     ],
   },
@@ -177,19 +186,31 @@ router.beforeEach((to, _from, next) => {
   const user = userStr ? JSON.parse(userStr) : null
   const isAdmin = user?.role === 'ADMIN'
 
-  // 需要登录但未登录 → 跳转登录页并记录重定向地址
-  if (to.meta.requiresAuth && !isAuthed) {
+  // 管理后台路由：未登录 → 跳转管理后台登录页
+  if (to.meta.requiresAdmin && !isAuthed) {
+    next({ path: '/admin/login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  // 管理后台路由：已登录但非管理员 → 跳转管理后台登录页（清除登录状态）
+  if (to.meta.requiresAdmin && isAuthed && !isAdmin) {
+    next({ path: '/admin/login' })
+    return
+  }
+
+  // 前台需要登录但未登录 → 跳转前台登录页
+  if (to.meta.requiresAuth && !to.meta.requiresAdmin && !isAuthed) {
     next({ path: '/login', query: { redirect: to.fullPath } })
     return
   }
 
-  // 需要管理员权限但非管理员 → 跳转 403
-  if (to.meta.requiresAdmin && !isAdmin) {
-    next({ name: 'not-found' })
+  // 已登录管理员访问管理后台登录页 → 直接进入后台
+  if (isAuthed && isAdmin && to.name === 'admin-login') {
+    next({ path: '/admin' })
     return
   }
 
-  // 已登录访问登录/注册页 → 跳转首页
+  // 已登录访问前台登录/注册页 → 跳转首页
   if (isAuthed && (to.name === 'login' || to.name === 'register')) {
     next({ path: '/' })
     return
