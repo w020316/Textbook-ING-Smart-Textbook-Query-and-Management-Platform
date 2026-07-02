@@ -13,6 +13,16 @@ import { handleNewsCategories, handleNewsList, handleNewsDetail, handleNewsComme
 import { handleSemesters, handleCalendar, handleStats } from './public.js'
 // 用户模块
 import { handlePointsBalance, handlePointsRecords, handleMessages, handleUnreadMessages, handleMarkRead, handleCheckIn } from './user.js'
+// 管理后台模块
+import {
+  handleAdminTextbookList, handleAdminTextbookCreate, handleAdminTextbookUpdate, handleAdminTextbookDelete,
+  handleAdminNewsList, handleAdminNewsCreate, handleAdminNewsUpdate, handleAdminNewsDelete, handleAdminNewsTogglePin,
+  handleAdminUserList, handleAdminUserUpdate, handleAdminUserUpdatePoints,
+  handleAdminSemesterList, handleAdminSemesterCreate, handleAdminSemesterUpdate, handleAdminSemesterDelete, handleAdminWeekBatchCreate,
+  handleAdminCollegeList, handleAdminCollegeCreate, handleAdminCollegeUpdate, handleAdminCollegeDelete,
+  handleAdminMajorCreate, handleAdminMajorDelete, handleAdminClassCreate, handleAdminClassDelete,
+  handleAdminStats, handleAdminCourseList, handleAdminCategoryList,
+} from './admin.js'
 
 // ==================== 路由匹配 ====================
 type Handler = (req: any, res: any, params: Record<string, string>, query: URLSearchParams) => Promise<void>
@@ -87,6 +97,48 @@ const routes: Route[] = [
 
   // --- 签到 ---
   { method: 'POST', pattern: '/api/user/check-in', handler: handleCheckIn, auth: true, rateLimit: 1 },
+
+  // --- 管理后台：教材 ---
+  { method: 'GET', pattern: '/api/admin/textbooks', handler: handleAdminTextbookList, auth: true },
+  { method: 'POST', pattern: '/api/admin/textbooks', handler: handleAdminTextbookCreate, auth: true },
+  { method: 'PUT', pattern: '/api/admin/textbooks/:id', handler: handleAdminTextbookUpdate, auth: true },
+  { method: 'DELETE', pattern: '/api/admin/textbooks/:id', handler: handleAdminTextbookDelete, auth: true },
+
+  // --- 管理后台：新闻 ---
+  { method: 'GET', pattern: '/api/admin/news', handler: handleAdminNewsList, auth: true },
+  { method: 'POST', pattern: '/api/admin/news', handler: handleAdminNewsCreate, auth: true },
+  { method: 'PUT', pattern: '/api/admin/news/:id', handler: handleAdminNewsUpdate, auth: true },
+  { method: 'DELETE', pattern: '/api/admin/news/:id', handler: handleAdminNewsDelete, auth: true },
+  { method: 'PUT', pattern: '/api/admin/news/:id/pin', handler: handleAdminNewsTogglePin, auth: true },
+
+  // --- 管理后台：用户 ---
+  { method: 'GET', pattern: '/api/admin/users', handler: handleAdminUserList, auth: true },
+  { method: 'PUT', pattern: '/api/admin/users/:id', handler: handleAdminUserUpdate, auth: true },
+  { method: 'PUT', pattern: '/api/admin/users/:id/points', handler: handleAdminUserUpdatePoints, auth: true },
+
+  // --- 管理后台：校历 ---
+  { method: 'GET', pattern: '/api/admin/semesters', handler: handleAdminSemesterList, auth: true },
+  { method: 'POST', pattern: '/api/admin/semesters', handler: handleAdminSemesterCreate, auth: true },
+  { method: 'PUT', pattern: '/api/admin/semesters/:id', handler: handleAdminSemesterUpdate, auth: true },
+  { method: 'DELETE', pattern: '/api/admin/semesters/:id', handler: handleAdminSemesterDelete, auth: true },
+  { method: 'POST', pattern: '/api/admin/calendar/weeks/batch', handler: handleAdminWeekBatchCreate, auth: true },
+
+  // --- 管理后台：学院/专业/班级 ---
+  { method: 'GET', pattern: '/api/admin/colleges', handler: handleAdminCollegeList, auth: true },
+  { method: 'POST', pattern: '/api/admin/colleges', handler: handleAdminCollegeCreate, auth: true },
+  { method: 'PUT', pattern: '/api/admin/colleges/:id', handler: handleAdminCollegeUpdate, auth: true },
+  { method: 'DELETE', pattern: '/api/admin/colleges/:id', handler: handleAdminCollegeDelete, auth: true },
+  { method: 'POST', pattern: '/api/admin/majors', handler: handleAdminMajorCreate, auth: true },
+  { method: 'DELETE', pattern: '/api/admin/majors/:id', handler: handleAdminMajorDelete, auth: true },
+  { method: 'POST', pattern: '/api/admin/classes', handler: handleAdminClassCreate, auth: true },
+  { method: 'DELETE', pattern: '/api/admin/classes/:id', handler: handleAdminClassDelete, auth: true },
+
+  // --- 管理后台：统计 ---
+  { method: 'GET', pattern: '/api/admin/stats', handler: handleAdminStats, auth: true },
+
+  // --- 管理后台：辅助 ---
+  { method: 'GET', pattern: '/api/admin/courses', handler: handleAdminCourseList, auth: true },
+  { method: 'GET', pattern: '/api/admin/categories', handler: handleAdminCategoryList, auth: true },
 ]
 
 // ==================== 主处理器 ====================
