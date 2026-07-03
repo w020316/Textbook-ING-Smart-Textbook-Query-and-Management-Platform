@@ -90,9 +90,13 @@
         </div>
       </header>
 
-      <!-- 主内容区 -->
+      <!-- 主内容区：使用 keep-alive 缓存后台页面，减少菜单切换时的重复 loading -->
       <main class="flex-1 bg-gray-50 p-4 md:p-6 overflow-auto">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </main>
     </div>
   </div>
