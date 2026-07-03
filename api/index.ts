@@ -102,32 +102,32 @@ const routes: Route[] = [
   { method: 'POST', pattern: '/api/user/check-in', handler: handleCheckIn, auth: true, rateLimit: 1 },
 
   // --- 管理后台：教材 ---
-  { method: 'GET', pattern: '/api/admin/textbooks', handler: handleAdminTextbookList, auth: true },
+  { method: 'GET', pattern: '/api/admin/textbooks', handler: handleAdminTextbookList, auth: true, cache: 120 },
   { method: 'POST', pattern: '/api/admin/textbooks', handler: handleAdminTextbookCreate, auth: true },
   { method: 'PUT', pattern: '/api/admin/textbooks/:id', handler: handleAdminTextbookUpdate, auth: true },
   { method: 'DELETE', pattern: '/api/admin/textbooks/:id', handler: handleAdminTextbookDelete, auth: true },
 
   // --- 管理后台：新闻 ---
-  { method: 'GET', pattern: '/api/admin/news', handler: handleAdminNewsList, auth: true },
+  { method: 'GET', pattern: '/api/admin/news', handler: handleAdminNewsList, auth: true, cache: 120 },
   { method: 'POST', pattern: '/api/admin/news', handler: handleAdminNewsCreate, auth: true },
   { method: 'PUT', pattern: '/api/admin/news/:id', handler: handleAdminNewsUpdate, auth: true },
   { method: 'DELETE', pattern: '/api/admin/news/:id', handler: handleAdminNewsDelete, auth: true },
   { method: 'PUT', pattern: '/api/admin/news/:id/pin', handler: handleAdminNewsTogglePin, auth: true },
 
   // --- 管理后台：用户 ---
-  { method: 'GET', pattern: '/api/admin/users', handler: handleAdminUserList, auth: true },
+  { method: 'GET', pattern: '/api/admin/users', handler: handleAdminUserList, auth: true, cache: 60 },
   { method: 'PUT', pattern: '/api/admin/users/:id', handler: handleAdminUserUpdate, auth: true },
   { method: 'PUT', pattern: '/api/admin/users/:id/points', handler: handleAdminUserUpdatePoints, auth: true },
 
   // --- 管理后台：校历 ---
-  { method: 'GET', pattern: '/api/admin/semesters', handler: handleAdminSemesterList, auth: true },
+  { method: 'GET', pattern: '/api/admin/semesters', handler: handleAdminSemesterList, auth: true, cache: 300 },
   { method: 'POST', pattern: '/api/admin/semesters', handler: handleAdminSemesterCreate, auth: true },
   { method: 'PUT', pattern: '/api/admin/semesters/:id', handler: handleAdminSemesterUpdate, auth: true },
   { method: 'DELETE', pattern: '/api/admin/semesters/:id', handler: handleAdminSemesterDelete, auth: true },
   { method: 'POST', pattern: '/api/admin/calendar/weeks/batch', handler: handleAdminWeekBatchCreate, auth: true },
 
   // --- 管理后台：学院/专业/班级 ---
-  { method: 'GET', pattern: '/api/admin/colleges', handler: handleAdminCollegeList, auth: true },
+  { method: 'GET', pattern: '/api/admin/colleges', handler: handleAdminCollegeList, auth: true, cache: 300 },
   { method: 'POST', pattern: '/api/admin/colleges', handler: handleAdminCollegeCreate, auth: true },
   { method: 'PUT', pattern: '/api/admin/colleges/:id', handler: handleAdminCollegeUpdate, auth: true },
   { method: 'DELETE', pattern: '/api/admin/colleges/:id', handler: handleAdminCollegeDelete, auth: true },
@@ -137,11 +137,11 @@ const routes: Route[] = [
   { method: 'DELETE', pattern: '/api/admin/classes/:id', handler: handleAdminClassDelete, auth: true },
 
   // --- 管理后台：统计 ---
-  { method: 'GET', pattern: '/api/admin/stats', handler: handleAdminStats, auth: true },
+  { method: 'GET', pattern: '/api/admin/stats', handler: handleAdminStats, auth: true, cache: 120 },
 
   // --- 管理后台：辅助 ---
-  { method: 'GET', pattern: '/api/admin/courses', handler: handleAdminCourseList, auth: true },
-  { method: 'GET', pattern: '/api/admin/categories', handler: handleAdminCategoryList, auth: true },
+  { method: 'GET', pattern: '/api/admin/courses', handler: handleAdminCourseList, auth: true, cache: 300 },
+  { method: 'GET', pattern: '/api/admin/categories', handler: handleAdminCategoryList, auth: true, cache: 600 },
 ]
 
 // ==================== 主处理器 ====================

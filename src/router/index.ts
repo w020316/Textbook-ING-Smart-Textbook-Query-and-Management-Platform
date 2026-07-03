@@ -219,7 +219,15 @@ router.beforeEach((to, _from, next) => {
 
   // 已登录前台访问前台登录/注册页 → 跳转首页
   // 注意：这里只判断前台登录态，不再因管理后台登录而误跳转
+  // 但如果 user 角色是 ADMIN，说明是旧版本残留的 admin token（存在 token key 中），清除它并显示登录页
   if (isFrontAuthed && (to.name === 'login' || to.name === 'register')) {
+    if (isFrontAdmin) {
+      // 旧版本残留：admin token 存储在 token key 中，清除并显示登录页
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      next()
+      return
+    }
     next({ path: '/' })
     return
   }

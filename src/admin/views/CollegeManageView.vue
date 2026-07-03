@@ -29,7 +29,16 @@
 
     <!-- 错误提示 -->
     <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm">
-      {{ error }}
+      <div class="flex items-center justify-between">
+        <span>{{ error }}</span>
+        <button
+          type="button"
+          class="ml-4 px-3 py-1 text-xs font-medium text-white bg-red-500 rounded hover:bg-red-600 transition-colors shrink-0"
+          @click="fetchList"
+        >
+          重试
+        </button>
+      </div>
     </div>
 
     <template v-else>
