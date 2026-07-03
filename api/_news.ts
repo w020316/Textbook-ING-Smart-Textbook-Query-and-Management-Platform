@@ -33,6 +33,10 @@ export async function handleNewsCategories(req: any, res: any) {
 }
 
 // 新闻列表
+// 注意：只做一次 findMany 查询，不做 count 查询。
+// 原因：Vercel Hobby 计划函数超时 10 秒，连接 Neon（新加坡）单次查询约 3-5 秒，
+// 两次串行查询（count + findMany）会超时导致 FUNCTION_INVOCATION_FAILED。
+// 用 take: pageSize + 1 判断是否有下一页，估算 total。
 export async function handleNewsList(req: any, res: any, params: any, query: URLSearchParams) {
   const page = Math.max(1, parseInt(query.get('page') || '1'))
   const pageSize = Math.min(50, Math.max(1, parseInt(query.get('pageSize') || '10')))
@@ -41,30 +45,35 @@ export async function handleNewsList(req: any, res: any, params: any, query: URL
   const where: any = {}
   if (categoryId) where.categoryId = categoryId
 
-  // 串行查询，避免 Serverless 环境中并行查询导致连接池耗尽
-  const total = await prisma.news.count({ where })
-  const pinned = await prisma.news.findMany({
-    where: { ...where, isPinned: true },
-    include: { category: true },
-    orderBy: { createdAt: 'desc' },
-  })
-  const list = await prisma.news.findMany({
-    where: { ...where, isPinned: false },
-    include: { category: true },
+  // 只做一次查询：多取 1 条用于判断是否有下一页
+  const allNews = await prisma.news.findMany({
+    where,
+    orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
     skip: (page - 1) * pageSize,
-    take: pageSize,
-    orderBy: { createdAt: 'desc' },
+    take: pageSize + 1,
+    select: {
+      id: true,
+      title: true,
+      summary: true,
+      coverImage: true,
+      isPinned: true,
+      viewCount: true,
+      createdAt: true,
+      categoryId: true,
+    },
   })
 
-  const effectiveTotal = Math.max(0, total - pinned.length)
+  const hasNext = allNews.length > pageSize
+  const items = allNews.slice(0, pageSize)
+  // 估算 total：有下一页时取下限，无下一页时为精确值
+  const total = hasNext ? page * pageSize + 1 : (page - 1) * pageSize + items.length
 
   return sendSuccess(res, {
-    pinned,
-    list,
-    total: effectiveTotal,
+    list: items,
+    total,
     page,
     pageSize,
-    totalPages: Math.ceil(effectiveTotal / pageSize),
+    totalPages: hasNext ? page + 1 : page,
   })
 }
 
@@ -73,24 +82,28 @@ export async function handleNewsDetail(req: any, res: any, params: any) {
   const { id } = params
   const ip = req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'
 
-  // 阅读数去重
-  const shouldCount = shouldCountView(String(ip).split(',')[0].trim(), id)
-  const news = await prisma.news.update({
-    where: { id },
-    data: shouldCount ? { viewCount: { increment: 1 } } : {},
-    include: { category: true, author: { select: { name: true, avatar: true } } },
-  })
-  if (!news) return sendError(res, '新闻不存在', 4, 404)
+  try {
+    // 阅读数去重
+    const shouldCount = shouldCountView(String(ip).split(',')[0].trim(), id)
+    const news = await prisma.news.update({
+      where: { id },
+      data: shouldCount ? { viewCount: { increment: 1 } } : {},
+    })
+    if (!news) return sendError(res, '新闻不存在', 4, 404)
 
-  // 相关文章
-  const related = await prisma.news.findMany({
-    where: { categoryId: news.categoryId, id: { not: id } },
-    take: 4,
-    orderBy: { createdAt: 'desc' },
-    select: { id: true, title: true, createdAt: true, viewCount: true },
-  })
+    // 相关文章
+    const related = await prisma.news.findMany({
+      where: { categoryId: news.categoryId, id: { not: id } },
+      take: 4,
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, title: true, createdAt: true, viewCount: true },
+    })
 
-  return sendSuccess(res, { ...news, related })
+    return sendSuccess(res, { ...news, related })
+  } catch (err: any) {
+    console.error('[News Detail Error]:', err.message)
+    return sendError(res, '新闻加载失败，请稍后重试', 5, 500)
+  }
 }
 
 // 新闻评论列表

@@ -45,3 +45,7 @@ pnpm-debug.log*
 .deploy-creds.json
 .deploy-creds.*.json
 scripts/.vercel-token
+scripts/.vercel-token-clean
+scripts/.vercel-cookie
+scripts/.deploy-manifest.json
+scripts/.deploy-ps.ps1

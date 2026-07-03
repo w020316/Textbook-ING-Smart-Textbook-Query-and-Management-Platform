@@ -5,15 +5,15 @@ import { rateLimit } from './_rateLimit.js'
 import { getCache, setCache, invalidateCache } from './_cache.js'
 
 // 认证模块
-import { handleSendCode, handleRegister, handleLogin, handleLogout, handleForgotPassword, handleResetPassword, handleMe } from './auth.js'
+import { handleSendCode, handleRegister, handleLogin, handleLogout, handleForgotPassword, handleResetPassword, handleMe } from './_auth.js'
 // 教材模块
-import { handleTextbookList, handleTextbookDetail, handleHotSearches, handleColleges, handleMajors, handleClasses } from './textbook.js'
+import { handleTextbookList, handleTextbookDetail, handleHotSearches, handleColleges, handleMajors, handleClasses } from './_textbook.js'
 // 新闻模块
-import { handleNewsCategories, handleNewsList, handleNewsDetail, handleNewsComments, handleAddComment } from './news.js'
+import { handleNewsCategories, handleNewsList, handleNewsDetail, handleNewsComments, handleAddComment } from './_news.js'
 // 公开模块
-import { handleSemesters, handleCalendar, handleStats } from './public.js'
+import { handleSemesters, handleCalendar, handleStats } from './_public.js'
 // 用户模块
-import { handlePointsBalance, handlePointsRecords, handleMessages, handleUnreadMessages, handleMarkRead, handleCheckIn } from './user.js'
+import { handlePointsBalance, handlePointsRecords, handleMessages, handleUnreadMessages, handleMarkRead, handleCheckIn } from './_user.js'
 // 管理后台模块
 import {
   handleAdminTextbookList, handleAdminTextbookCreate, handleAdminTextbookUpdate, handleAdminTextbookDelete,
@@ -23,7 +23,7 @@ import {
   handleAdminCollegeList, handleAdminCollegeCreate, handleAdminCollegeUpdate, handleAdminCollegeDelete,
   handleAdminMajorCreate, handleAdminMajorDelete, handleAdminClassCreate, handleAdminClassDelete,
   handleAdminStats, handleAdminCourseList, handleAdminCategoryList,
-} from './admin.js'
+} from './_admin.js'
 
 // ==================== 路由匹配 ====================
 type Handler = (req: any, res: any, params: Record<string, string>, query: URLSearchParams) => Promise<void>
@@ -81,7 +81,7 @@ const routes: Route[] = [
 
   // --- 新闻 ---
   { method: 'GET', pattern: '/api/news/categories', handler: handleNewsCategories, cache: 600 },
-  { method: 'GET', pattern: '/api/news', handler: handleNewsList, cache: 30 },
+  { method: 'GET', pattern: '/api/news', handler: handleNewsList, cache: 600 },
   { method: 'GET', pattern: '/api/news/:id', handler: handleNewsDetail },
   { method: 'GET', pattern: '/api/news/:id/comments', handler: handleNewsComments },
   { method: 'POST', pattern: '/api/news/:id/comments', handler: handleAddComment, auth: true, rateLimit: 10 },
