@@ -7,11 +7,12 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   const apiKey = process.env.RESEND_API_KEY
   const from = process.env.MAIL_FROM || 'onboarding@resend.dev'
 
-  // 未配置 API Key 时降级为 console 输出
+  // 未配置 API Key 时降级为 console 输出，但抛错让调用方知道邮件未真正发送
+  // 这样调用方可以根据 emailSent 状态决定是否返回验证码给前端（兜底）
   if (!apiKey) {
     console.log(`[Email Mock] to=${to}, subject=${subject}`)
     console.log(`[Email Mock] body=${html}`)
-    return
+    throw new Error('邮件服务未配置（RESEND_API_KEY 缺失），邮件未真正发送')
   }
 
   const res = await fetch(RESEND_API_URL, {

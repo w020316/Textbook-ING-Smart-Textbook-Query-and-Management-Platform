@@ -108,11 +108,12 @@ async function sendCode() {
 
   sendingCode.value = true
   try {
-    const res = await post<{ code?: string }>('/auth/send-code', { email: form.value.email })
+    const res = await post<{ code?: string } | null>('/auth/send-code', { email: form.value.email })
     startCountdown()
-    if (res.code) {
+    // 后端在邮件服务未配置或发送失败时会返回 code 作为兜底；邮件真正发送成功时返回 null
+    if (res && res.code) {
       form.value.code = res.code
-      success.value = `验证码已发送（开发环境：${res.code}）`
+      success.value = `验证码已发送（当前环境未配置邮件服务，验证码：${res.code}）`
     } else {
       success.value = '验证码已发送至邮箱，请查收'
     }
