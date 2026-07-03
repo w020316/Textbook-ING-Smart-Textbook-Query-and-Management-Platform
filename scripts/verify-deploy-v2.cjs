@@ -1,11 +1,14 @@
 /**
  * v2 验证脚本：改进 API 测试方式
+ * 凭据通过环境变量注入：TEST_ADMIN_EMAIL / TEST_ADMIN_PASSWORD
  */
 const puppeteer = require('puppeteer-core');
 const fs = require('fs');
 
 const log = (msg) => console.log(`[v2] ${msg}`);
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@textbook-ing.com';
+const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'admin123';
 
 async function main() {
   log('连接 Edge...');
@@ -44,7 +47,7 @@ async function main() {
     const apiTests = [
       { url: '/api/news/categories', name: '新闻分类' },
       { url: '/api/semesters', name: '学期列表' },
-      { url: '/api/auth/login', name: '登录', method: 'POST', body: { email: 'admin@textbook-ing.com', password: 'admin123' } },
+      { url: '/api/auth/login', name: '登录', method: 'POST', body: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } },
     ];
     
     for (const t of apiTests) {

@@ -1,11 +1,14 @@
 /**
  * 最终验证：完整功能测试
+ * 凭据通过环境变量注入：TEST_ADMIN_EMAIL / TEST_ADMIN_PASSWORD
  */
 const puppeteer = require('puppeteer-core');
 const fs = require('fs');
 
 const log = (msg) => console.log(`[final] ${msg}`);
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@textbook-ing.com';
+const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'admin123';
 
 async function main() {
   const resp = await fetch('http://localhost:9222/json/version');
@@ -57,17 +60,17 @@ async function main() {
   
   // 3. 登录测试
   log('\n===== 3. 登录测试 =====');
-  const loginResult = await apiPage.evaluate(async () => {
+  const loginResult = await apiPage.evaluate(async (creds) => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'admin@textbook-ing.com', password: 'admin123' }),
+        body: JSON.stringify({ email: creds.email, password: creds.password }),
       });
       const data = await res.json();
       return { status: res.status, code: data.code, hasToken: !!(data.data && data.data.token), user: data.data && data.data.user ? data.data.user.email : null };
     } catch (e) { return { error: e.message }; }
-  });
+  }, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
   log(`  登录结果: ${JSON.stringify(loginResult)}`);
   const loginPassed = loginResult.status === 200 && loginResult.code === 0 && loginResult.hasToken;
   results.push({ name: '管理员登录', passed: loginPassed, detail: `token=${loginPassed}, user=${loginResult.user}` });
@@ -75,15 +78,15 @@ async function main() {
   // 4. 用 token 访问受保护 API
   if (loginPassed) {
     log('\n===== 4. 受保护 API 测试 =====');
-    const token = await apiPage.evaluate(async () => {
+    const token = await apiPage.evaluate(async (creds) => {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'admin@textbook-ing.com', password: 'admin123' }),
+        body: JSON.stringify({ email: creds.email, password: creds.password }),
       });
       const data = await res.json();
       return data.data.token;
-    });
+    }, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
     
     const protectedApis = [
       { url: '/api/auth/me', name: '当前用户' },

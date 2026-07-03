@@ -1,6 +1,7 @@
 // 管理后台 API 处理器（需 ADMIN 角色）
 import { prisma, sendSuccess, sendError, getRequestBody } from './_lib.js'
 import { sanitizeRichHtml } from './_sanitize.js'
+import { invalidateCache } from './_cache.js'
 
 // 管理员权限校验（在 index.ts 的 auth 守卫之后调用）
 function checkAdmin(req: any, res: any): boolean {
@@ -50,6 +51,8 @@ export async function handleAdminTextbookCreate(req: any, res: any) {
   const tb = await prisma.textbook.create({
     data: { title, author, publisher: publisher || '', isbn: isbn || '', price: price || 0, courseId, classId: classId || null, coverImage: coverImage || null },
   })
+  // 教材数量变化，失效统计缓存
+  invalidateCache('public:stats')
   return sendSuccess(res, tb, '创建成功')
 }
 
@@ -69,6 +72,8 @@ export async function handleAdminTextbookDelete(req: any, res: any, params: any)
   if (!checkAdmin(req, res)) return
   const { id } = params
   await prisma.textbook.delete({ where: { id } })
+  // 教材数量变化，失效统计缓存
+  invalidateCache('public:stats')
   return sendSuccess(res, null, '删除成功')
 }
 
@@ -112,6 +117,8 @@ export async function handleAdminNewsCreate(req: any, res: any) {
       coverImage: coverImage || null,
     },
   })
+  // 失效新闻相关缓存
+  invalidateCache('public:news:')
   return sendSuccess(res, news, '创建成功')
 }
 
@@ -130,6 +137,8 @@ export async function handleAdminNewsUpdate(req: any, res: any, params: any) {
       coverImage,
     },
   })
+  // 失效新闻相关缓存
+  invalidateCache('public:news:')
   return sendSuccess(res, news, '更新成功')
 }
 
@@ -137,6 +146,8 @@ export async function handleAdminNewsDelete(req: any, res: any, params: any) {
   if (!checkAdmin(req, res)) return
   const { id } = params
   await prisma.news.delete({ where: { id } })
+  // 失效新闻相关缓存
+  invalidateCache('public:news:')
   return sendSuccess(res, null, '删除成功')
 }
 
@@ -146,6 +157,8 @@ export async function handleAdminNewsTogglePin(req: any, res: any, params: any) 
   const news = await prisma.news.findUnique({ where: { id } })
   if (!news) return sendError(res, '新闻不存在', 4, 404)
   const updated = await prisma.news.update({ where: { id }, data: { isPinned: !news.isPinned } })
+  // 失效新闻列表缓存（置顶状态影响列表顺序）
+  invalidateCache('public:news:list:')
   return sendSuccess(res, updated, updated.isPinned ? '已置顶' : '已取消置顶')
 }
 
@@ -315,6 +328,9 @@ export async function handleAdminCollegeCreate(req: any, res: any) {
   const { name, code, sort } = body
   if (!name || !code) return sendError(res, '名称和代码为必填')
   const college = await prisma.college.create({ data: { name, code, sort: sort || 0 } })
+  // 学院数据变化，失效学院列表和统计缓存
+  invalidateCache('public:colleges')
+  invalidateCache('public:stats')
   return sendSuccess(res, college, '创建成功')
 }
 
@@ -323,6 +339,8 @@ export async function handleAdminCollegeUpdate(req: any, res: any, params: any) 
   const { id } = params
   const body = await getRequestBody(req)
   const college = await prisma.college.update({ where: { id }, data: body })
+  // 学院数据变化，失效学院列表缓存
+  invalidateCache('public:colleges')
   return sendSuccess(res, college, '更新成功')
 }
 
@@ -330,6 +348,9 @@ export async function handleAdminCollegeDelete(req: any, res: any, params: any) 
   if (!checkAdmin(req, res)) return
   const { id } = params
   await prisma.college.delete({ where: { id } })
+  // 学院数据变化，失效学院列表和统计缓存
+  invalidateCache('public:colleges')
+  invalidateCache('public:stats')
   return sendSuccess(res, null, '删除成功')
 }
 

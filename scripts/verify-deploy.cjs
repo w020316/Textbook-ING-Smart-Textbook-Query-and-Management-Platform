@@ -1,11 +1,14 @@
 /**
  * 验证部署：在浏览器中访问 Vercel 部署的网站，测试首页和 API
+ * 凭据通过环境变量注入：TEST_ADMIN_EMAIL / TEST_ADMIN_PASSWORD
  */
 const puppeteer = require('puppeteer-core');
 const fs = require('fs');
 
 const log = (msg) => console.log(`[verify] ${msg}`);
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@textbook-ing.com';
+const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'admin123';
 
 const URLs = [
   { url: 'https://textbook-ing.vercel.app/', name: '首页', expect: /教材|ING|Textbook/i },
@@ -51,14 +54,14 @@ async function main() {
   log('\n测试登录 API:');
   const loginPage = await browser.newPage();
   try {
-    const loginResult = await loginPage.evaluate(async () => {
+    const loginResult = await loginPage.evaluate(async (creds) => {
       try {
         const res = await fetch('https://textbook-ing.vercel.app/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: 'admin@textbook-ing.com',
-            password: 'admin123',
+            email: creds.email,
+            password: creds.password,
           }),
         });
         const text = await res.text();
@@ -68,7 +71,7 @@ async function main() {
       } catch (e) {
         return { error: e.message };
       }
-    });
+    }, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
     log(`  登录响应: ${JSON.stringify(loginResult).slice(0, 300)}`);
     const passed = loginResult.status === 200 && loginResult.data && (loginResult.data.code === 0 || loginResult.data.token);
     results.push({ name: '管理员登录', status: loginResult.status, passed, preview: JSON.stringify(loginResult.data).slice(0, 100) });

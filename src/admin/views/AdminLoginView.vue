@@ -125,11 +125,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useAdminAuthStore } from '@/stores/adminAuth'
 
 const router = useRouter()
 const route = useRoute()
-const authStore = useAuthStore()
+const adminAuthStore = useAdminAuthStore()
 
 const form = ref({ email: '', password: '' })
 const loading = ref(false)
@@ -153,15 +153,8 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    const data = await authStore.login(form.value.email, form.value.password)
-
-    // 校验是否为管理员
-    if (data.user.role !== 'ADMIN') {
-      // 非管理员，清除登录状态并提示
-      authStore.clearAuth()
-      error.value = '该账号无管理员权限，请使用管理员账号登录'
-      return
-    }
+    // 使用管理后台独立 auth store（token 存储到 adminToken，与前台隔离）
+    await adminAuthStore.login(form.value.email, form.value.password)
 
     // 管理员登录成功
     success.value = true

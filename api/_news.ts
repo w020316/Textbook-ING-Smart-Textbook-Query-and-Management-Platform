@@ -1,6 +1,7 @@
 // 新闻相关 API 处理器（用户端）
 import { prisma, sendSuccess, sendError, getRequestBody } from './_lib.js'
 import { sanitizeHtml } from './_sanitize.js'
+import { getCache, setCache } from './_cache.js'
 
 // 阅读数去重（内存 Set + TTL 1小时）
 const viewSet = new Map<string, number>() // key: ip:newsId -> timestamp
@@ -23,12 +24,17 @@ function shouldCountView(ip: string, newsId: string): boolean {
   return true
 }
 
-// 新闻分类
+// 新闻分类（低频变更，缓存 60 分钟）
 export async function handleNewsCategories(req: any, res: any) {
+  const cacheKey = 'public:news:categories'
+  const cached = getCache<any>(cacheKey)
+  if (cached) return sendSuccess(res, cached)
+
   const list = await prisma.newsCategory.findMany({
     orderBy: { sort: 'asc' },
     include: { _count: { select: { news: true } } },
   })
+  setCache(cacheKey, list, 60 * 60)
   return sendSuccess(res, list)
 }
 
@@ -37,10 +43,19 @@ export async function handleNewsCategories(req: any, res: any) {
 // 原因：Vercel Hobby 计划函数超时 10 秒，连接 Neon（新加坡）单次查询约 3-5 秒，
 // 两次串行查询（count + findMany）会超时导致 FUNCTION_INVOCATION_FAILED。
 // 用 take: pageSize + 1 判断是否有下一页，估算 total。
+// 缓存策略：首页（page=1）短期缓存 2 分钟，加速首屏加载；其他分页不缓存。
 export async function handleNewsList(req: any, res: any, params: any, query: URLSearchParams) {
   const page = Math.max(1, parseInt(query.get('page') || '1'))
   const pageSize = Math.min(50, Math.max(1, parseInt(query.get('pageSize') || '10')))
   const categoryId = query.get('categoryId') || ''
+
+  // 仅对首页+无分类筛选的情况做短期缓存
+  const cacheable = page === 1
+  const cacheKey = `public:news:list:p1:${pageSize}`
+  if (cacheable && !categoryId) {
+    const cached = getCache<any>(cacheKey)
+    if (cached) return sendSuccess(res, cached)
+  }
 
   const where: any = {}
   if (categoryId) where.categoryId = categoryId
@@ -68,13 +83,17 @@ export async function handleNewsList(req: any, res: any, params: any, query: URL
   // 估算 total：有下一页时取下限，无下一页时为精确值
   const total = hasNext ? page * pageSize + 1 : (page - 1) * pageSize + items.length
 
-  return sendSuccess(res, {
+  const data = {
     list: items,
     total,
     page,
     pageSize,
     totalPages: hasNext ? page + 1 : page,
-  })
+  }
+  if (cacheable && !categoryId) {
+    setCache(cacheKey, data, 2 * 60)
+  }
+  return sendSuccess(res, data)
 }
 
 // 新闻详情

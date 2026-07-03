@@ -122,9 +122,12 @@ async function handleLogin() {
   try {
     const data = await authStore.login(form.value.email, form.value.password)
 
-    // 管理员通过前台登录页登录时，引导到管理后台
+    // 前台登录页仅处理普通用户登录
+    // 管理员账号请通过 /admin/login 登录管理后台
     if (data.user.role === 'ADMIN') {
-      router.push('/admin')
+      // 管理员账号不应在前台登录页保留登录态
+      authStore.clearAuth()
+      error.value = '管理员账号请通过管理后台登录入口登录'
       return
     }
 

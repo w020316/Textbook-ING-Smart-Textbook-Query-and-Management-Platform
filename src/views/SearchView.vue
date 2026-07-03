@@ -15,7 +15,7 @@
         登录后即可查询教材信息，新用户注册赠送<span class="text-amber-600 font-medium">100 积分</span>
       </p>
 
-      <button type="button" class="btn-primary mt-6 w-full" @click="router.push('/login')">
+      <button type="button" class="btn-primary mt-6 w-full" @click="goLogin">
         立即登录
       </button>
     </div>
@@ -149,7 +149,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { get } from '@/utils/request'
 import { useAuthStore } from '@/stores/auth'
 import Pagination from '@/components/Pagination.vue'
@@ -157,6 +157,12 @@ import type { Textbook, College, Major, Class, Semester, HotSearch, PaginatedRes
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
+
+// 跳转登录页，并携带当前路径作为 redirect，登录后可返回原页面
+function goLogin() {
+  router.push({ path: '/login', query: { redirect: route.fullPath } })
+}
 
 // ==================== 筛选条件 ====================
 const keyword = ref('')

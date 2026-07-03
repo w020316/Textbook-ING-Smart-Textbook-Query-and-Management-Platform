@@ -5,7 +5,7 @@
       <div>
         <h1 class="text-2xl font-bold text-gray-900">仪表盘</h1>
         <p class="mt-1 text-sm text-gray-500">
-          欢迎回来，{{ authStore.user?.name || '管理员' }}
+          欢迎回来，{{ adminAuthStore.user?.name || '管理员' }}
         </p>
       </div>
     </div>
@@ -51,9 +51,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { get } from '@/utils/request'
-import { useAuthStore } from '@/stores/auth'
+import { useAdminAuthStore } from '@/stores/adminAuth'
 
-const authStore = useAuthStore()
+const adminAuthStore = useAdminAuthStore()
 
 // 后台统计数据结构
 interface DashboardStats {

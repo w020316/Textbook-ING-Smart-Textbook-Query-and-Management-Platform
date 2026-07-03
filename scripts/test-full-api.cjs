@@ -1,7 +1,10 @@
 /**
  * 全功能 API 测试
+ * 凭据通过环境变量注入：TEST_ADMIN_EMAIL / TEST_ADMIN_PASSWORD
  */
 const BASE = 'https://textbook-ing.vercel.app'
+const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || 'admin@textbook-ing.com'
+const ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'admin123'
 
 async function fetchApi(path, options = {}) {
   const start = Date.now()
@@ -38,10 +41,10 @@ async function main() {
     }
   }
 
-  console.log('\n=== 2. 登录测试 (admin@textbook-ing.com) ===')
+  console.log(`\n=== 2. 登录测试 (${ADMIN_EMAIL}) ===`)
   const loginR = await fetchApi('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: 'admin@textbook-ing.com', password: 'admin123' }),
+    body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
   })
   if (loginR.error || loginR.status !== 200) {
     console.log(`  Login failed: ${loginR.error || loginR.status} ${loginR.preview}`)

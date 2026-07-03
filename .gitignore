@@ -49,3 +49,9 @@ scripts/.vercel-token-clean
 scripts/.vercel-cookie
 scripts/.deploy-manifest.json
 scripts/.deploy-ps.ps1
+
+# 视频文件（大文件，不纳入版本控制）
+*.mp4
+
+# TypeScript 增量构建缓存
+tsconfig.tsbuildinfo

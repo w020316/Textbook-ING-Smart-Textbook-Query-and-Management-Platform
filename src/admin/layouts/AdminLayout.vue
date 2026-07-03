@@ -101,11 +101,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useAdminAuthStore } from '@/stores/adminAuth'
 
 const route = useRoute()
 const router = useRouter()
-const authStore = useAuthStore()
+const adminAuthStore = useAdminAuthStore()
 
 // 移动端侧边栏开关
 const sidebarOpen = ref(false)
@@ -152,9 +152,9 @@ function isActive(path: string): boolean {
   return route.path.startsWith(path)
 }
 
-// 退出登录（跳转回管理后台登录页）
+// 退出登录（仅清除管理后台登录态，跳转回管理后台登录页）
 async function handleLogout() {
-  await authStore.logout()
+  await adminAuthStore.logout()
   router.push('/admin/login')
 }
 </script>

@@ -200,24 +200,32 @@ async function main() {
 
   let courseCount = 0
   let textbookCount = 0
+  // 课程开设到最近3个学期（不同学期可独立排课）
+  // 但教材只关联到课程的一个实例，避免数据库出现重复教材记录
   for (const c of courses) {
+    // 该课程最近一个学期实例（用于挂载教材）
+    let textbookCourseId: string | null = null
     for (const sem of semesterRecords.slice(-3)) {
       const course = await prisma.course.create({
         data: { name: c.name, code: c.code, credits: c.credits, semesterId: sem.id },
       })
       courseCount++
-      for (const tb of c.textbooks) {
-        await prisma.textbook.create({
-          data: {
-            title: tb.title,
-            author: tb.author,
-            publisher: tb.publisher,
-            isbn: tb.isbn,
-            price: tb.price,
-            courseId: course.id,
-          },
-        })
-        textbookCount++
+      // 只在第一个学期实例创建教材，其余学期共用（避免重复记录）
+      if (!textbookCourseId) {
+        textbookCourseId = course.id
+        for (const tb of c.textbooks) {
+          await prisma.textbook.create({
+            data: {
+              title: tb.title,
+              author: tb.author,
+              publisher: tb.publisher,
+              isbn: tb.isbn,
+              price: tb.price,
+              courseId: course.id,
+            },
+          })
+          textbookCount++
+        }
       }
     }
   }

@@ -179,39 +179,47 @@ router.beforeEach((to, _from, next) => {
     document.title = `${title} - 教材ING`
   }
 
-  const token = localStorage.getItem('token')
-  const isAuthed = !!token
-  // 从 localStorage 读取用户角色（登录时已存储）
-  const userStr = localStorage.getItem('user')
-  const user = userStr ? JSON.parse(userStr) : null
-  const isAdmin = user?.role === 'ADMIN'
+  // 前台登录态：读取前台 token / user
+  const frontToken = localStorage.getItem('token')
+  const frontUserStr = localStorage.getItem('user')
+  const frontUser = frontUserStr ? JSON.parse(frontUserStr) : null
+  const isFrontAuthed = !!frontToken
+  const isFrontAdmin = frontUser?.role === 'ADMIN'
+
+  // 管理后台登录态：读取后台独立的 adminToken / adminUser
+  const adminToken = localStorage.getItem('adminToken')
+  const adminUserStr = localStorage.getItem('adminUser')
+  const adminUser = adminUserStr ? JSON.parse(adminUserStr) : null
+  const isAdminAuthed = !!adminToken
+  const isAdminRole = adminUser?.role === 'ADMIN'
 
   // 管理后台路由：未登录 → 跳转管理后台登录页
-  if (to.meta.requiresAdmin && !isAuthed) {
+  if (to.meta.requiresAdmin && !isAdminAuthed) {
     next({ path: '/admin/login', query: { redirect: to.fullPath } })
     return
   }
 
   // 管理后台路由：已登录但非管理员 → 跳转管理后台登录页（清除登录状态）
-  if (to.meta.requiresAdmin && isAuthed && !isAdmin) {
+  if (to.meta.requiresAdmin && isAdminAuthed && !isAdminRole) {
     next({ path: '/admin/login' })
     return
   }
 
   // 前台需要登录但未登录 → 跳转前台登录页
-  if (to.meta.requiresAuth && !to.meta.requiresAdmin && !isAuthed) {
+  if (to.meta.requiresAuth && !to.meta.requiresAdmin && !isFrontAuthed) {
     next({ path: '/login', query: { redirect: to.fullPath } })
     return
   }
 
-  // 已登录管理员访问管理后台登录页 → 直接进入后台
-  if (isAuthed && isAdmin && to.name === 'admin-login') {
+  // 已登录管理后台访问管理后台登录页 → 直接进入后台
+  if (isAdminAuthed && isAdminRole && to.name === 'admin-login') {
     next({ path: '/admin' })
     return
   }
 
-  // 已登录访问前台登录/注册页 → 跳转首页
-  if (isAuthed && (to.name === 'login' || to.name === 'register')) {
+  // 已登录前台访问前台登录/注册页 → 跳转首页
+  // 注意：这里只判断前台登录态，不再因管理后台登录而误跳转
+  if (isFrontAuthed && (to.name === 'login' || to.name === 'register')) {
     next({ path: '/' })
     return
   }

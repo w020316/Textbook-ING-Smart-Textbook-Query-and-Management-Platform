@@ -1,5 +1,6 @@
 // 教材查询相关 API 处理器（用户端）
 import { prisma, sendSuccess, sendError } from './_lib.js'
+import { getCache, setCache } from './_cache.js'
 
 // 教材列表
 export async function handleTextbookList(req: any, res: any, params: any, query: URLSearchParams) {
@@ -65,21 +66,31 @@ export async function handleTextbookDetail(req: any, res: any, params: any) {
   return sendSuccess(res, textbook)
 }
 
-// 热门搜索
+// 热门搜索（缓存 10 分钟）
 export async function handleHotSearches(req: any, res: any) {
+  const cacheKey = 'public:hot-searches'
+  const cached = getCache<any>(cacheKey)
+  if (cached) return sendSuccess(res, cached)
+
   const list = await prisma.hotSearch.findMany({
     orderBy: { count: 'desc' },
     take: 10,
   })
+  setCache(cacheKey, list, 10 * 60)
   return sendSuccess(res, list)
 }
 
-// 学院列表
+// 学院列表（低频变更，缓存 60 分钟）
 export async function handleColleges(req: any, res: any) {
+  const cacheKey = 'public:colleges'
+  const cached = getCache<any>(cacheKey)
+  if (cached) return sendSuccess(res, cached)
+
   const list = await prisma.college.findMany({
     orderBy: { sort: 'asc' },
     include: { _count: { select: { majors: true } } },
   })
+  setCache(cacheKey, list, 60 * 60)
   return sendSuccess(res, list)
 }
 

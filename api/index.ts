@@ -67,13 +67,13 @@ const routes: Route[] = [
 
   // --- 教材 ---
   { method: 'GET', pattern: '/api/textbooks', handler: handleTextbookList, auth: true },
-  { method: 'GET', pattern: '/api/textbooks/hot-searches', handler: handleHotSearches, auth: true },
+  { method: 'GET', pattern: '/api/textbooks/hot-searches', handler: handleHotSearches },
   { method: 'GET', pattern: '/api/textbooks/:id', handler: handleTextbookDetail, auth: true },
 
-  // --- 学院/专业/班级 ---
-  { method: 'GET', pattern: '/api/colleges', handler: handleColleges, auth: true },
-  { method: 'GET', pattern: '/api/colleges/:id/majors', handler: handleMajors, auth: true },
-  { method: 'GET', pattern: '/api/majors/:id/classes', handler: handleClasses, auth: true },
+  // --- 学院/专业/班级（公开，用于校历查询和教材查询的筛选下拉） ---
+  { method: 'GET', pattern: '/api/colleges', handler: handleColleges },
+  { method: 'GET', pattern: '/api/colleges/:id/majors', handler: handleMajors },
+  { method: 'GET', pattern: '/api/majors/:id/classes', handler: handleClasses },
 
   // --- 校历 ---
   { method: 'GET', pattern: '/api/semesters', handler: handleSemesters, cache: 300 },
