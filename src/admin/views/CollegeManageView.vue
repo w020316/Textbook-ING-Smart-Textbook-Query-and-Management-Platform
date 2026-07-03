@@ -210,9 +210,13 @@
         </div>
       </div>
       <template #footer>
-        <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" @click="closeCollegeModal">取消</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600" @click="submitCollege">
-          {{ collegeModal.isEdit ? '保存' : '创建' }}
+        <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" :disabled="submitting" @click="closeCollegeModal">取消</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2" :disabled="submitting" @click="submitCollege">
+          <svg v-if="submitting" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z" />
+          </svg>
+          {{ submitting ? '保存中...' : (collegeModal.isEdit ? '保存' : '创建') }}
         </button>
       </template>
     </Modal>
@@ -252,8 +256,14 @@
         </div>
       </div>
       <template #footer>
-        <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" @click="closeMajorModal">取消</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600" @click="submitMajor">创建</button>
+        <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" :disabled="submitting" @click="closeMajorModal">取消</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2" :disabled="submitting" @click="submitMajor">
+          <svg v-if="submitting" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z" />
+          </svg>
+          {{ submitting ? '创建中...' : '创建' }}
+        </button>
       </template>
     </Modal>
 
@@ -285,8 +295,14 @@
         </div>
       </div>
       <template #footer>
-        <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" @click="closeClassModal">取消</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600" @click="submitClass">创建</button>
+        <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" :disabled="submitting" @click="closeClassModal">取消</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2" :disabled="submitting" @click="submitClass">
+          <svg v-if="submitting" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z" />
+          </svg>
+          {{ submitting ? '创建中...' : '创建' }}
+        </button>
       </template>
     </Modal>
   </div>
@@ -296,7 +312,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { get, post, put, del } from '@/utils/request'
 import Modal from '@/admin/components/Modal.vue'
+import { useToast } from '@/admin/composables/useToast'
 import type { College, Major, Class } from '@/types'
+
+const toast = useToast()
 
 interface AdminMajor extends Major {
   classes?: Class[]
@@ -310,6 +329,7 @@ interface AdminCollege extends College {
 
 const list = ref<AdminCollege[]>([])
 const loading = ref(true)
+const submitting = ref(false)
 const error = ref('')
 
 // 展开状态
@@ -369,25 +389,31 @@ function openCollegeEdit(college: AdminCollege) {
 }
 
 function closeCollegeModal() {
+  if (submitting.value) return
   collegeModal.value.show = false
 }
 
 async function submitCollege() {
   const f = collegeModal.value.form
   if (!f.name || !f.code) {
-    error.value = '名称和代码为必填'
+    toast.warning('名称和代码为必填')
     return
   }
+  submitting.value = true
   try {
     if (collegeModal.value.isEdit && collegeModal.value.id) {
       await put(`/admin/colleges/${collegeModal.value.id}`, { name: f.name, code: f.code, sort: f.sort })
+      toast.success(`学院「${f.name}」已更新`)
     } else {
       await post('/admin/colleges', { name: f.name, code: f.code, sort: f.sort })
+      toast.success(`学院「${f.name}」已创建`)
     }
     await fetchList()
     closeCollegeModal()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '保存失败'
+    toast.error(e instanceof Error ? e.message : '保存失败')
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -395,9 +421,10 @@ async function deleteCollege(college: AdminCollege) {
   if (!confirm(`确认删除学院「${college.name}」吗？其下所有专业和班级将一并删除。`)) return
   try {
     await del(`/admin/colleges/${college.id}`)
+    toast.success(`学院「${college.name}」已删除`)
     await fetchList()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '删除失败'
+    toast.error(e instanceof Error ? e.message : '删除失败')
   }
 }
 
@@ -426,15 +453,17 @@ function openMajorCreate(college: AdminCollege) {
 }
 
 function closeMajorModal() {
+  if (submitting.value) return
   majorModal.value.show = false
 }
 
 async function submitMajor() {
   const f = majorModal.value.form
   if (!f.name || !f.code) {
-    error.value = '名称和代码为必填'
+    toast.warning('名称和代码为必填')
     return
   }
+  submitting.value = true
   try {
     await post('/admin/majors', {
       name: f.name,
@@ -442,10 +471,13 @@ async function submitMajor() {
       collegeId: majorModal.value.collegeId,
       sort: f.sort,
     })
+    toast.success(`专业「${f.name}」已创建`)
     await fetchList()
     closeMajorModal()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '创建专业失败'
+    toast.error(e instanceof Error ? e.message : '创建专业失败')
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -453,9 +485,10 @@ async function deleteMajor(major: AdminMajor) {
   if (!confirm(`确认删除专业「${major.name}」吗？其下所有班级将一并删除。`)) return
   try {
     await del(`/admin/majors/${major.id}`)
+    toast.success(`专业「${major.name}」已删除`)
     await fetchList()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '删除失败'
+    toast.error(e instanceof Error ? e.message : '删除失败')
   }
 }
 
@@ -484,25 +517,30 @@ function openClassCreate(major: AdminMajor) {
 }
 
 function closeClassModal() {
+  if (submitting.value) return
   classModal.value.show = false
 }
 
 async function submitClass() {
   const f = classModal.value.form
   if (!f.name || !f.grade) {
-    error.value = '名称和年级为必填'
+    toast.warning('名称和年级为必填')
     return
   }
+  submitting.value = true
   try {
     await post('/admin/classes', {
       name: f.name,
       grade: f.grade,
       majorId: classModal.value.majorId,
     })
+    toast.success(`班级「${f.grade}级 ${f.name}」已创建`)
     await fetchList()
     closeClassModal()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '创建班级失败'
+    toast.error(e instanceof Error ? e.message : '创建班级失败')
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -510,9 +548,10 @@ async function deleteClass(cls: Class) {
   if (!confirm(`确认删除班级「${cls.grade}级 ${cls.name}」吗？`)) return
   try {
     await del(`/admin/classes/${cls.id}`)
+    toast.success(`班级「${cls.grade}级 ${cls.name}」已删除`)
     await fetchList()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '删除失败'
+    toast.error(e instanceof Error ? e.message : '删除失败')
   }
 }
 

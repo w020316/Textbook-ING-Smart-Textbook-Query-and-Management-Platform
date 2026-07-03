@@ -154,8 +154,17 @@
       </div>
       <template #footer>
         <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" @click="closeForm">取消</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600" @click="submitForm">
-          {{ formModal.isEdit ? '保存' : '创建' }}
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60 disabled:cursor-not-allowed"
+          :disabled="submitting"
+          @click="submitForm"
+        >
+          <svg v-if="submitting" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z" />
+          </svg>
+          {{ submitting ? '保存中...' : (formModal.isEdit ? '保存' : '创建') }}
         </button>
       </template>
     </Modal>
@@ -166,11 +175,15 @@
 import { ref, onMounted } from 'vue'
 import { get, post, put, del } from '@/utils/request'
 import Modal from '@/admin/components/Modal.vue'
+import { useToast } from '@/admin/composables/useToast'
 import type { Semester } from '@/types'
+
+const toast = useToast()
 
 const list = ref<Semester[]>([])
 const loading = ref(true)
 const error = ref('')
+const submitting = ref(false)
 
 async function fetchList() {
   loading.value = true
@@ -229,15 +242,17 @@ function openEdit(item: Semester) {
 }
 
 function closeForm() {
+  if (submitting.value) return
   formModal.value.show = false
 }
 
 async function submitForm() {
   const f = formModal.value.form
   if (!f.name || !f.startDate || !f.endDate) {
-    error.value = '名称、开始/结束日期为必填'
+    toast.warning('名称、开始/结束日期为必填')
     return
   }
+  submitting.value = true
   try {
     if (formModal.value.isEdit && f.id) {
       await put(`/admin/semesters/${f.id}`, {
@@ -247,6 +262,7 @@ async function submitForm() {
         totalWeeks: f.totalWeeks,
         isActive: f.isActive,
       })
+      toast.success('学期已更新')
     } else {
       await post('/admin/semesters', {
         name: f.name,
@@ -254,44 +270,58 @@ async function submitForm() {
         endDate: f.endDate,
         totalWeeks: f.totalWeeks,
       })
+      toast.success('学期已创建')
     }
     await fetchList()
     closeForm()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '保存失败'
+    toast.error(e instanceof Error ? e.message : '保存失败')
+  } finally {
+    submitting.value = false
   }
 }
 
 // ==================== 设为当前学期 ====================
 async function setActive(item: Semester) {
   if (!confirm(`确认将「${item.name}」设为当前学期吗？`)) return
+  submitting.value = true
   try {
     await put(`/admin/semesters/${item.id}`, { isActive: true })
     await fetchList()
+    toast.success(`「${item.name}」已设为当前学期`)
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '设置失败'
+    toast.error(e instanceof Error ? e.message : '设置失败')
+  } finally {
+    submitting.value = false
   }
 }
 
 // ==================== 生成教学周 ====================
 async function generateWeeks(item: Semester) {
   if (!confirm(`将为「${item.name}」生成 ${item.totalWeeks} 周教学周（会覆盖已有数据），继续吗？`)) return
+  submitting.value = true
   try {
     await post('/admin/semesters/weeks/batch', { semesterId: item.id })
-    alert('教学周已生成')
+    toast.success('教学周已生成')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '生成教学周失败'
+    toast.error(e instanceof Error ? e.message : '生成教学周失败')
+  } finally {
+    submitting.value = false
   }
 }
 
 // ==================== 删除 ====================
 async function handleDelete(item: Semester) {
   if (!confirm(`确认删除学期「${item.name}」吗？相关教学周将一并删除。`)) return
+  submitting.value = true
   try {
     await del(`/admin/semesters/${item.id}`)
     await fetchList()
+    toast.success(`「${item.name}」已删除`)
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '删除失败'
+    toast.error(e instanceof Error ? e.message : '删除失败')
+  } finally {
+    submitting.value = false
   }
 }
 

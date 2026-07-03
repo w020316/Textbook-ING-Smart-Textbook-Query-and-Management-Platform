@@ -99,6 +99,9 @@
         </router-view>
       </main>
     </div>
+
+    <!-- 全局 toast 通知容器 -->
+    <ToastContainer />
   </div>
 </template>
 
@@ -106,6 +109,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAdminAuthStore } from '@/stores/adminAuth'
+import ToastContainer from '@/admin/components/ToastContainer.vue'
 
 const route = useRoute()
 const router = useRouter()

@@ -155,8 +155,14 @@
         </div>
       </div>
       <template #footer>
-        <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" @click="closeRoleModal">取消</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600" @click="submitRole">确认</button>
+        <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" :disabled="submitting" @click="closeRoleModal">取消</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2" :disabled="submitting" @click="submitRole">
+          <svg v-if="submitting" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z" />
+          </svg>
+          {{ submitting ? '保存中...' : '确认' }}
+        </button>
       </template>
     </Modal>
 
@@ -187,8 +193,14 @@
         </div>
       </div>
       <template #footer>
-        <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" @click="closePointsModal">取消</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-amber-500 rounded-lg hover:bg-amber-600" @click="submitPoints">确认调整</button>
+        <button type="button" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200" :disabled="submitting" @click="closePointsModal">取消</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-amber-500 rounded-lg hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2" :disabled="submitting" @click="submitPoints">
+          <svg v-if="submitting" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z" />
+          </svg>
+          {{ submitting ? '调整中...' : '确认调整' }}
+        </button>
       </template>
     </Modal>
   </div>
@@ -199,7 +211,10 @@ import { ref, onMounted } from 'vue'
 import { get, put, post } from '@/utils/request'
 import Pagination from '@/components/Pagination.vue'
 import Modal from '@/admin/components/Modal.vue'
+import { useToast } from '@/admin/composables/useToast'
 import type { User, Role, PaginatedResponse } from '@/types'
+
+const toast = useToast()
 
 interface AdminUser extends User {
   emailVerified?: string | null
@@ -210,6 +225,7 @@ const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const loading = ref(true)
+const submitting = ref(false)
 const error = ref('')
 
 const keyword = ref('')
@@ -281,17 +297,22 @@ function openRoleModal(user: AdminUser) {
 }
 
 function closeRoleModal() {
+  if (submitting.value) return
   roleModal.value.show = false
 }
 
 async function submitRole() {
   if (!roleModal.value.user) return
+  submitting.value = true
   try {
     await put(`/admin/users/${roleModal.value.user.id}`, { role: roleModal.value.role })
+    toast.success(`已将「${roleModal.value.user.name}」的角色修改为「${roleLabel(roleModal.value.role)}」`)
     await fetchList()
     closeRoleModal()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '修改角色失败'
+    toast.error(e instanceof Error ? e.message : '修改角色失败')
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -308,24 +329,29 @@ function openPointsModal(user: AdminUser) {
 }
 
 function closePointsModal() {
+  if (submitting.value) return
   pointsModal.value.show = false
 }
 
 async function submitPoints() {
   if (!pointsModal.value.user) return
   if (!pointsModal.value.amount || typeof pointsModal.value.amount !== 'number') {
-    error.value = '请输入有效的积分增减值'
+    toast.warning('请输入有效的积分增减值')
     return
   }
+  submitting.value = true
   try {
     await post(`/admin/users/${pointsModal.value.user.id}/points`, {
       amount: pointsModal.value.amount,
       reason: pointsModal.value.reason,
     })
+    toast.success(`已为「${pointsModal.value.user.name}」调整积分 ${pointsModal.value.amount > 0 ? '+' : ''}${pointsModal.value.amount}`)
     await fetchList()
     closePointsModal()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '调整积分失败'
+    toast.error(e instanceof Error ? e.message : '调整积分失败')
+  } finally {
+    submitting.value = false
   }
 }
 
